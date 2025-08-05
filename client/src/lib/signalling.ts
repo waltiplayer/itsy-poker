@@ -227,13 +227,24 @@ function handleSignallingMessage(message: any): void {
             // A peer has disconnected
             console.log(`Peer ${message.username} disconnected`);
             
-            // Remove from participants list
+            // Remove from the participants list
             appState.update(state => {
                 if (message.username && state.participants[message.username]) {
                     delete state.participants[message.username];
                 }
                 return state;
             });
+            break;
+
+        case 'host-assigned':
+            appState.update(state => {
+                state.isHost = message.isHost;
+                return state;
+            });
+            break;
+
+        case 'host-changed':
+            console.log(`Host changed to ${message.newHost}`);
             break;
 
         case 'error':

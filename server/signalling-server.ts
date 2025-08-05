@@ -57,7 +57,7 @@ wss.on('connection', (ws: WebSocket) => {
 /**
  * Process incoming messages from clients
  * @param ws - The WebSocket connection
- * @param message - The parsed message from client
+ * @param message - The parsed message from the client
  */
 function handleMessage(ws: WebSocket, message: ServerMessage): void {
     try {
@@ -100,15 +100,16 @@ function createRoom(ws: WebSocket, message: CreateRoomRequest): void {
     rooms.set(roomId, new Set([username]));
 
     // Store client info
-    clients.set(username, { ws, roomId });
+    clients.set(username, { ws, roomId, isHost: true });
 
     // Send room created confirmation
     ws.send(JSON.stringify({
         type: 'room-created',
-        roomId: roomId
+        roomId: roomId,
+        isHost: true,
     }));
 
-    console.log(`Room ${roomId} created by ${username}`);
+    console.log(`Room ${roomId} created by ${username} (host)`);
 }
 
 /**
@@ -126,14 +127,14 @@ function joinRoom(ws: WebSocket, message: JoinRoomRequest): void {
         return;
     }
 
-    // Get room participants
+    // Get the room participants
     const participants = rooms.get(roomId);
 
     if (participants === undefined) {
         throw new Error('Room participants not found');
     }
 
-    // Check if room is full (max 10 participants)
+    // Check if the room is full (max 10 participants)
     if (participants.size >= 10) {
         sendError(ws, 'Room is full');
         return;
@@ -143,13 +144,14 @@ function joinRoom(ws: WebSocket, message: JoinRoomRequest): void {
     participants.add(username);
 
     // Store client info
-    clients.set(username, { ws, roomId });
+    clients.set(username, { ws, roomId, isHost: false });
 
     // Send room joined confirmation
     ws.send(JSON.stringify({
         type: 'room-joined',
         roomId: roomId,
-        participants: Array.from(participants)
+        participants: Array.from(participants),
+        isHost: false,
     }));
 
     // Notify other participants about the new peer
@@ -180,6 +182,39 @@ function relayMessage(message: OfferMessage | AnswerMessage | IceCandidateMessag
 }
 
 /**
+ * Assigns a new host in a room when the current host disconnects
+ * @param roomId - The room ID
+ * @param participants - Set of participant usernames
+ */
+function assignNewHost(roomId: any, participants: Set<string>) {
+    if (participants.size === 0) return;
+
+    // Get the first participant as the new host
+    const newHostUsername = Array.from(participants)[0];
+    const newHostClient = clients.get(newHostUsername);
+
+    if (newHostClient) {
+        // Update client to be the new host
+        newHostClient.isHost = true;
+
+        // Notify the new host
+        newHostClient.ws.send(JSON.stringify({
+            type: 'host-assigned',
+            isHost: true
+        }));
+
+        // Notify all participants about the new host
+        notifyPeers(roomId, newHostUsername, {
+            type: 'host-changed',
+            newHost: newHostUsername
+        });
+
+        console.log(`New host assigned in room ${roomId}: ${newHostUsername}`);
+    }
+
+}
+
+/**
  * Handle client disconnection and cleanup
  * @param ws - The disconnected WebSocket connection
  */
@@ -187,11 +222,13 @@ function handleDisconnection(ws: WebSocket): void {
     // Find the disconnected client
     let disconnectedUsername = null;
     let roomId = null;
+    let wasHost = false;
 
     for (const [username, client] of clients.entries()) {
         if (client.ws === ws) {
             disconnectedUsername = username;
             roomId = client.roomId;
+            wasHost = client.isHost;
             break;
         }
     }
@@ -205,11 +242,16 @@ function handleDisconnection(ws: WebSocket): void {
         if (room) {
             room.delete(disconnectedUsername);
 
-            // If room is empty, remove it
+            // If the room is empty, remove it
             if (room.size === 0) {
                 rooms.delete(roomId);
                 console.log(`Room ${roomId} removed (empty)`);
             } else {
+                // If the host has disconnected, assign a new host
+                if (wasHost) {
+                    assignNewHost(roomId, room);
+                }
+
                 // Notify other participants about the disconnection
                 notifyPeers(roomId, disconnectedUsername, {
                     type: 'peer-disconnected',
@@ -265,7 +307,7 @@ function generateRoomId(): string {
 }
 
 /**
- * Handle graceful server shutdown on SIGINT (Ctrl+C)
+ * Handle a graceful server shutdown on SIGINT (Ctrl+C)
  */
 process.on('SIGINT', () => {
     console.log('Shutting down server...');

@@ -8,6 +8,8 @@ export interface Client {
     ws: WebSocket;
     /** The room ID this client is currently in */
     roomId: string;
+    /** Whether this client is the host of their room */
+    isHost: boolean;
 }
 
 /**
@@ -132,6 +134,14 @@ export interface ErrorMessage {
 }
 
 /**
+ *
+ */
+export interface HostAssignedMessage {
+    type: 'host-changed';
+    newHost: string;
+}
+
+/**
  * Union type for all possible server request messages
  */
 export type ServerMessage =
@@ -152,4 +162,5 @@ export type ServerResponse =
     | RoomJoinedResponse
     | NewPeerMessage
     | PeerDisconnectedMessage
-    | ErrorMessage;
+    | ErrorMessage
+    | HostAssignedMessage;
