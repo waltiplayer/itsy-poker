@@ -1,0 +1,34 @@
+{
+  "name": "itsypoker-signalling-server",
+  "version": "1.0.0",
+  "description": "Signalling server for ItsyPoker planning poker application",
+  "main": "signalling-server.js",
+  "type": "module",
+  "scripts": {
+    "start": "concurrently \"tsc\" \"nodemon signalling-server.js\"",
+    "build": "tsc",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui"
+  },
+  "keywords": [
+    "webrtc",
+    "signalling",
+    "planning-poker"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.18.2"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1",
+    "@vitest/ui": "^3.2.4",
+    "concurrently": "^9.1.2",
+    "nodemon": "^3.1.10",
+    "typescript": "^5.8.3",
+    "uuid": "^11.1.0",
+    "vitest": "^3.2.4"
+  }
+}

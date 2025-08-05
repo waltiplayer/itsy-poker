@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm install:*)",
+      "Bash(npm test:*)",
+      "Bash(npx vitest run:*)",
+      "Bash(npx tailwindcss init:*)",
+      "Bash(move scripts*.ts srclib)",
+      "Bash(copy scripts*.ts srclib )",
+      "Bash(del scripts*.ts)",
+      "Bash(cp:*)",
+      "Bash(rm:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout 5 npm run dev)",
+      "Bash(npm uninstall:*)",
+      "Bash(npm run start:*)",
+      "Bash(pkill:*)",
+      "Bash(npm run test:run:*)",
+      "Bash(git init:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)"
+    ],
+    "deny": []
+  }
+}
